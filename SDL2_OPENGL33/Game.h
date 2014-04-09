@@ -3,9 +3,22 @@
 
 #include <vector>
 #include <SDL.h>
+
+// Include GLM
+#include <glm.hpp>
+#include <gtc/matrix_transform.hpp>
+#include <gtc/type_ptr.hpp>
+
 #include "Log.h"
 #include "GameObject.h"
 #include "GameStateMachine.h"
+#include "opengl/GLSLShader.h"
+
+//out vertex struct for interleaved attributes
+struct Vertex {
+    glm::vec3 position;
+    glm::vec3 color;
+};
 
 class Game
 {
@@ -56,6 +69,7 @@ private:
     bool m_bRunning;
     SDL_Window* m_pWindow;
     SDL_GLContext m_openglContext;
+    GLSLShader* m_pShader;
 
     int m_gameWidth;
     int m_gameHeight;

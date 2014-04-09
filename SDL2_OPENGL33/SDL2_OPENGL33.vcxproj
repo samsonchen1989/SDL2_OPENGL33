@@ -28,6 +28,10 @@
     <ClInclude Include="opengl\GLSLShader.h" />
     <ClInclude Include="Vector2D.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\shader.frag" />
+    <None Include="shaders\shader.vert" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{8D6EB1AC-0CD1-4270-8094-ABEDBC818167}</ProjectGuid>
     <RootNamespace>SDL2_OPENGL33</RootNamespace>

@@ -16,6 +16,9 @@
     <Filter Include="源文件\opengl">
       <UniqueIdentifier>{cf7801f9-9f1f-4d18-b03d-56406e990b59}</UniqueIdentifier>
     </Filter>
+    <Filter Include="源文件\shaders">
+      <UniqueIdentifier>{4274892d-a04e-41ae-ad1a-e9a5f6cddd5a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Game.cpp">
@@ -62,5 +65,13 @@
     <ClInclude Include="opengl\GLSLShader.h">
       <Filter>源文件\opengl</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\shader.frag">
+      <Filter>源文件\shaders</Filter>
+    </None>
+    <None Include="shaders\shader.vert">
+      <Filter>源文件\shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

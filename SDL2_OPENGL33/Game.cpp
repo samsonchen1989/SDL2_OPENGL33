@@ -3,18 +3,18 @@
 // Include GLEW
 #include <GL/glew.h>
 
-// Include GLM
-#include <glm.hpp>
-#include <gtc/matrix_transform.hpp>
+#include <assert.h>
 
 #include "Game.h"
 #include "InputHandler.h"
-#include "opengl/GLSLShader.h"
 
 #define GL_CHECK_ERRORS assert(glGetError()==GL_NO_ERROR);
 
 using namespace std;
-using namespace glm;
+
+//projection and modelview matrices
+glm::mat4  P = glm::mat4(1);
+glm::mat4 MV = glm::mat4(1);
 
 Game* Game::s_pInstance = 0;
 
@@ -27,6 +27,7 @@ m_scrollSpeed(0.8f),
 m_bLevelComplete(false),
 m_bChangingState(false)
 {
+    m_pShader = new GLSLShader();
     // start at this level
     m_currentLevel = 1;
 }
@@ -78,20 +79,93 @@ GAME_STATUS_TAG Game::init(const char* title, int xpos, int ypos, int width, int
     m_pGameStateMachine = new GameStateMachine();
     //m_pGameStateMachine->changeState(new MainMenuState());
 
-    glClearColor(1.0, 0.0, 0.0, 1.0);
+    glClearColor(1.0, 1.0, 1.0, 1.0);
     // Enable depth test
     glEnable(GL_DEPTH_TEST);
     // Accept fragment if it closer to the camera than the former one
-    glDepthFunc(GL_LESS); 
+    glDepthFunc(GL_LESS);
     //set the polygon mode to render lines
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+    //GL_CHECK_ERRORS
+    //load shader
+    m_pShader->LoadFromFile(GL_VERTEX_SHADER, "shaders/shader.vert");
+    m_pShader->LoadFromFile(GL_FRAGMENT_SHADER, "shaders/shader.frag");
+    //compile and link shader
+    m_pShader->CreateAndLinkProgram();
+    m_pShader->Use();
+        //add shader attribute and uniforms
+        m_pShader->AddAttribute("vVertex");
+        m_pShader->AddAttribute("vColor");
+        m_pShader->AddUniform("MVP");
+    m_pShader->UnUse();
+    //GL_CHECK_ERRORS
+
+    //triangle vertices and indices
+    Vertex vertices[3];
+    GLushort indices[3];
+
+    //setup triangle geometry
+    //setup triangle vertices
+    vertices[0].color=glm::vec3(1,0,0);
+    vertices[1].color=glm::vec3(0,1,0);
+    vertices[2].color=glm::vec3(0,0,1);
+
+    vertices[0].position=glm::vec3(-1,-1,0);
+    vertices[1].position=glm::vec3(0,1,0);
+    vertices[2].position=glm::vec3(1,-1,0);
+
+    //setup triangle indices
+    indices[0] = 0;
+    indices[1] = 1;
+    indices[2] = 2;
+
+    //GL_CHECK_ERRORS
+
+    //vertex array and vertex buffer object IDs
+    GLuint vaoID;
+    GLuint vboVerticesID;
+    GLuint vboIndicesID;
+
+    //setup triangle vao and vbo stuff
+    glGenVertexArrays(1, &vaoID);
+    glGenBuffers(1, &vboVerticesID);
+    glGenBuffers(1, &vboIndicesID);
+
+    GLsizei stride = sizeof(Vertex);
+
+    glBindVertexArray(vaoID);
+        glBindBuffer(GL_ARRAY_BUFFER, vboVerticesID);
+        //pass triangle verteices to buffer object
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices[0], GL_STATIC_DRAW);
+        //GL_CHECK_ERRORS
+        //enable vertex attribute array for position
+        glEnableVertexAttribArray((*m_pShader)["vVertex"]);
+        glVertexAttribPointer((*m_pShader)["vVertex"], 3, GL_FLOAT, GL_FALSE,stride,0);
+        //enable vertex attribute array for colour
+        glEnableVertexAttribArray((*m_pShader)["vColor"]);
+        glVertexAttribPointer((*m_pShader)["vColor"], 3, GL_FLOAT, GL_FALSE, stride, (const GLvoid*)offsetof(Vertex, color));
+        //pass indices to element array buffer
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboIndicesID);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices[0], GL_STATIC_DRAW);
+        //GL_CHECK_ERRORS
 
     return GAME_INIT_SUCCESS;
 }
 
 void Game::render()
 {
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    //bind the shader
+    m_pShader->Use();
+    //pass the shader uniform
+    glUniformMatrix4fv((*m_pShader)("MVP"), 1, GL_FALSE, glm::value_ptr(P*MV));
+    //drwa triangle
+    glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_SHORT, 0);
+    //unbind the shader
+    m_pShader->UnUse();
+
     SDL_GL_SwapWindow(m_pWindow);
 }
 
@@ -102,9 +176,11 @@ void Game::clean()
     TheInputHandler::Instance()->clean();
 
     m_pGameStateMachine->clean();
-
     m_pGameStateMachine = 0;
+
+    m_pShader->DeleteShaderProgram();
     delete m_pGameStateMachine;
+    delete m_pShader;
 
     SDL_GL_DeleteContext(m_openglContext);
     SDL_DestroyWindow(m_pWindow);
